@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Contact</title>
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.css">
+	<style>
+		progress{
+			width: 100%;
+		}
+		.success{
+			color: green;
+		}
+		.error{
+			color: red;
+		}
+		#upload_results {
+		    color: blue;
+		}
+	</style>
+</head>
+<body>
+
+	<div class="container">
+
+		<h1 class="row">Contact</h1>
+
+		<div class="row">
+			<p>
+				<a href="tel:+642108241461">Phone us directly</a> 
+			</p>
+		</div>
+
+		<div class="row">
+			<p>
+				<a href="mailto:ruslan_aliyev_@hotmail.com?Subject=Travel%20Blog" target="_top">Email us directly</a>
+			</p>
+		</div>
+
+		<div class="row">
+			<form id="contact_body" method="post" action="process_contact.php">
+
+				<input type="text" name="name" placeholder="Name" data-required="true" class="form-control" />
+				<input type="email" name="email" placeholder="Email" data-required="true" class="form-control" />				
+				<input type="text" name="subject" placeholder="Subject" data-required="true" class="form-control" />
+				<textarea name="message" placeholder="Message" data-required="true" class="form-control"></textarea>
+			    
+		        <select name="rating" class="form-control">
+			        <option value="5">5</option>
+			        <option value="4">4</option>
+			        <option value="3">3</option>
+			        <option value="2">2</option>
+			        <option value="1">1</option>
+		        </select>
+
+				<input type="file" name="file_attach[]" multiple class="form-control" />
+<br>
+				<progress></progress>
+
+				<div id="upload_results"></div>
+
+				<div id="contact_results"></div>
+<br>
+		        <!-- <input type="button" value="Upload" /> -->
+		        <button type="submit" class="form-control" class="form-control">Submit</button>
+<br>			    
+				<input type="button" onclick="goBack('Back to Entries View')" value="Back" class="form-control" />
+			</form> 
+		</div>
+
+		<div class="row">
+		</div>
+
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/js/bootstrap.js"></script>	
+
+	<script>
+		function goBack(msg){
+			Android.goBack(msg);
+		}
+	</script>
+
+	<script>
+
+	var allowed_file_size = "1048576"; //allowed file size
+	var allowed_files = ['image/png', 'image/gif', 'image/jpeg', 'image/pjpeg']; //allowed file types
+	var border_color = "#C2C2C2"; //initial input border color
+
+	//$(':button').click(function(){});
+	$("#contact_body").submit(function(e){
+	    e.preventDefault(); //prevent default action 
+	    proceed = true; //set proceed flag to true
+    
+    	//validation
+    	$( $(this).find("input[data-required=true], textarea[data-required=true]") ).each(function(){
+
+            if(!$.trim($(this).val())){ //if this field is empty 
+                $(this).css('border-color','red'); //change border color to red   
+                proceed = false; //set do not proceed flag
+            }
+            //check invalid email
+            var email_reg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/; 
+            if($(this).attr("type")=="email" && !email_reg.test($.trim($(this).val()))){
+                $(this).css('border-color','red'); //change border color to red   
+                proceed = false; //set do not proceed flag              
+            }   
+
+    	}).on("input", function(){ //change border color to original
+	         $(this).css('border-color', border_color);
+	    });
+
+	    //check file size and type before upload, works in modern browsers
+	    if(window.File && window.FileReader && window.FileList && window.Blob){
+	        var total_files_size = 0;
+	        $(this.elements['file_attach[]'].files).each(function(i, ifile){
+	            if(ifile.value !== ""){ //continue only if file(s) are selected
+	                if(allowed_files.indexOf(ifile.type) === -1){ //check unsupported file
+	                    alert( ifile.name + " is unsupported file type!");
+	                    proceed = false;
+	                }
+	             total_files_size = total_files_size + ifile.size; //add file size to total size
+	            }
+	        }); 
+	       if(total_files_size > allowed_file_size){ 
+	            alert( "Make sure total file size is less than 1 MB!");
+	            proceed = false;
+	        }
+	    }
+
+	    //if everything's ok, continue with Ajax form submit
+	    if(proceed){ 
+	        var post_url = $(this).attr("action"); //get form action url
+	        var request_method = $(this).attr("method"); //get form GET/POST method
+	        //var form_data = new FormData($('form')[0]);
+	        var form_data = new FormData(this); //constructs key/value pairs representing fields and values
+	        
+	        $.ajax({ //ajax form submit
+	            url : post_url,
+	            type: request_method,
+
+	            xhr: function() {  // Custom XMLHttpRequest
+            		var myXhr = $.ajaxSettings.xhr();
+		            if(myXhr.upload){ // Check if upload property exists
+		                myXhr.upload.addEventListener('progress',progressHandlingFunction, false); // For handling the progress of the upload
+		            }
+		            return myXhr;
+		        },
+
+		        //Ajax events
+		        //beforeSend: beforeSendHandler,
+		        success: completeHandler,
+		        error: errorHandler,
+
+        		// Form data
+	            data : form_data,
+
+	            dataType : "json",
+
+        		//Options to tell jQuery not to process data or worry about content-type.
+	            contentType: false,
+	            cache: false,
+	            processData:false
+	        }).done(function(res){ //fetch server "json" messages when done
+	            if(res.type == "error"){
+	                $("#contact_results").html('<div class="error">'+ res.text +"</div>");
+	            }
+	            
+	            if(res.type == "done"){
+	                $("#contact_results").html('<div class="success">'+ res.text +"</div>");
+	            }
+	        });
+	        function progressHandlingFunction(e){
+			    if(e.lengthComputable){
+			        $('progress').attr({value:e.loaded,max:e.total});
+			    }
+			}
+			function completeHandler(e){
+			    $("#upload_results").html("<div>Upload complete</div>");
+			    setTimeout(function(){
+					location.reload();
+			    },1500);
+			}
+			function errorHandler(e){
+			    $("#upload_results").html("<div>Upload error</div>");
+			    setTimeout(function(){
+					location.reload();
+			    },1500);
+			}
+	    }
+
+	});
+
+	</script>
+</body>
+</html>

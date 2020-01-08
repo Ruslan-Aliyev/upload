@@ -1,0 +1,171 @@
+<!-- https://stackoverflow.com/questions/16207575/how-to-preview-an-image-before-and-after-upload -->
+
+<!-- http://www.expertphp.in/article/php-jquery-crop-and-resize-image-before-upload-using-croppie-plugin -->
+<!-- https://github.com/Foliotek/Croppie/issues/62#issuecomment-183382916 -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.2/croppie.min.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.2/croppie.js"></script>
+
+		<style>
+			
+			.container 
+			{
+				margin-top: 50px;
+			}
+
+			#preview_image, #edit_image 
+			{
+				height: 300px;
+				background-color: gray;
+			}
+
+			#preview_image_inner
+			{
+				width: 300px;
+				height: 300px;
+				margin: auto;
+			}
+
+			#preview_image img 
+			{
+				width: 200px;
+				height: 200px;
+				margin-top: 50px;
+				margin-left: 50px;
+			}
+
+			#btn_row 
+			{
+				margin-top: 50px;
+			}
+
+		</style>
+	</head>
+
+	<body>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12">
+
+					<form class="form" action="croppie.php" method="post">
+						
+						<div class="row">
+							<div class="col-md-6">
+								<div id="edit_image"></div>
+							</div>
+							<div class="col-md-6">	
+								<div id="preview_image">
+									<div id="preview_image_inner"></div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="row" id="btn_row">
+							<div class="col-md-4">
+								<input class="form-control" type="file" id="upload_image">
+							</div>
+							<div class="col-md-4">	
+								<button class="form-control" id="preview">Preview Image</button>
+							</div>
+							<div class="col-md-4">
+								<button class="form-control" id="upload">Upload Image</button>
+							</div>
+						</div>
+						
+						<input type="hidden" id="image" name="image">
+					</form>
+
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+
+			var resize = $('#edit_image').croppie({
+				enableExif: true,
+				enableOrientation: true,    
+				viewport: { // Default { width: 100, height: 100, type: 'square' } 
+					width: 200,
+					height: 200,
+					type: 'circle' //square
+				},
+				boundary: {
+					width: 300,
+					height: 300
+				}
+			});
+
+
+			$('#upload_image').on('change', function () { 
+				var reader = new FileReader();
+
+				reader.onload = function (e) 
+				{
+					resize.croppie('bind', {
+						url: e.target.result
+					}).then(function() {
+						console.log('upload');
+					});
+				}
+
+				reader.readAsDataURL(this.files[0]);
+			});
+
+
+			$('#preview').on('click', function (ev) {
+				resize.croppie('result', {
+					type: 'canvas',
+					size: 'viewport'
+				}).then(function (image) {
+
+					/*
+					var ajaxData = {
+						"image": image, 
+						"action": "preview"
+					};
+
+					$.ajax({
+						url: "croppie.php",
+						type: "POST",
+						data: ajaxData,
+						success: function (data) 
+						{
+							html = '<img src="' + image + '" />';
+
+							$("#preview_image").html(html);
+						}
+					});
+					*/
+
+					html = '<img src="' + image + '" />';
+
+					$("#preview_image_inner").html(html);
+				});
+
+			    return false;
+			});
+
+			$('#upload').on('click', function (ev) {
+				resize.croppie('result', {
+				type: 'canvas',
+				size: 'viewport'// or original
+				}).then(function (response) {
+					$('#image').val(response);
+					$('form').submit();
+				});
+
+				return false;
+			});
+
+		</script>
+
+	</body>
+</html>
